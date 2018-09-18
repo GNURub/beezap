@@ -6,6 +6,7 @@ import (
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/context"
 	"go.uber.org/zap"
+	"encoding/json"
 )
 
 func BeforeMiddlewareZap() func(ctx *context.Context) {
@@ -30,12 +31,16 @@ func AfterMiddlewareZap(logger *zap.Logger, timeFormat string, utc bool) func(ct
 				endTime = endTime.UTC()
 			}
 
+			headers, _ := json.Marshal(ctx.Request.Header)
+
 			logger.Info(path,
 				zap.Int("status", ctx.Output.Status),
 				zap.String("method", ctx.Input.Method()),
 				zap.String("path", path),
 				zap.String("uri", ctx.Input.URI()),
 				zap.String("query", query),
+				zap.ByteString("headers", headers),
+				zap.ByteString("body", ctx.Input.RequestBody),
 				zap.String("site", ctx.Input.Site()),
 				zap.String("ip", ctx.Input.IP()),
 				zap.String("refer", ctx.Input.Refer()),
