@@ -10,10 +10,8 @@ import (
 )
 
 func BeforeMiddlewareZap() func(ctx *context.Context) {
-	startTime := time.Now()
-
 	return func(ctx *context.Context) {
-		ctx.Input.SetData("start_timer", startTime)
+		ctx.Input.SetData("start_timer", time.Now())
 	}
 }
 
