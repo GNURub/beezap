@@ -15,7 +15,12 @@ func BeforeMiddlewareZap() func(ctx *context.Context) {
 	}
 }
 
-func AfterMiddlewareZap(logger *zap.Logger, timeFormat string, utc bool) func(ctx *context.Context) {
+func AfterMiddlewareZap(logger *zap.Logger, timeFormat string, utc bool, appendBody bool) func(ctx *context.Context) {
+
+	if appendBody {
+		beego.Warn("[zap] Be careful with personal data in body.")
+	}
+
 	return func(ctx *context.Context) {
 		startTimeInterface := ctx.Input.GetData("start_timer")
 		if startTime, ok := startTimeInterface.(time.Time); ok {
@@ -31,28 +36,35 @@ func AfterMiddlewareZap(logger *zap.Logger, timeFormat string, utc bool) func(ct
 
 			headers, _ := json.Marshal(ctx.Request.Header)
 
-			logger.Info(path,
+			fields := []zap.Field{
 				zap.Int("status", ctx.Output.Status),
 				zap.String("method", ctx.Input.Method()),
 				zap.String("path", path),
 				zap.String("uri", ctx.Input.URI()),
 				zap.String("query", query),
 				zap.ByteString("headers", headers),
-				zap.ByteString("body", ctx.Input.RequestBody),
 				zap.String("site", ctx.Input.Site()),
 				zap.String("ip", ctx.Input.IP()),
 				zap.String("refer", ctx.Input.Refer()),
 				zap.String("user-agent", ctx.Input.UserAgent()),
 				zap.String("time", endTime.Format(timeFormat)),
 				zap.Duration("latency", latency),
+			}
+
+			if appendBody {
+				fields = append(fields, zap.ByteString("body", ctx.Input.RequestBody))
+			}
+
+			logger.Info(path,
+				fields...
 			)
 		}
 	}
 }
 
-func InitBeeZapMiddleware(logger *zap.Logger, timeFormat string, utc bool) {
+func InitBeeZapMiddleware(logger *zap.Logger, timeFormat string, utc bool,  appendBody ...bool) {
 	beego.InsertFilter("*", beego.BeforeRouter, BeforeMiddlewareZap(), false)
-	beego.InsertFilter("*", beego.FinishRouter, AfterMiddlewareZap(logger, timeFormat, utc), false)
+	beego.InsertFilter("*", beego.FinishRouter, AfterMiddlewareZap(logger, timeFormat, utc, len(appendBody) > 0 && appendBody[0]), false)
 
-	beego.Info("Zap logger started")
+	beego.Info("[zap] Logger started")
 }

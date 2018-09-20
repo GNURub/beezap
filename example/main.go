@@ -5,7 +5,7 @@ import (
 
 	"github.com/astaxie/beego"
 	"go.uber.org/zap"
-	"beezap"
+	".."
 )
 
 type MainController struct {
@@ -18,7 +18,7 @@ func (this *MainController) Get() {
 
 func main() {
 	logger, _ := zap.NewProduction()
-	beezap.InitBeeZapMiddleware(logger, time.RFC3339, true)
+	beezap.InitBeeZapMiddleware(logger, time.RFC3339, true, true)
 	beego.Router("/", &MainController{})
 	beego.Run(":8090")
 }
