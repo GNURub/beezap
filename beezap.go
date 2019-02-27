@@ -16,9 +16,8 @@ func BeforeMiddlewareZap() func(ctx *context.Context) {
 }
 
 func AfterMiddlewareZap(logger *zap.Logger, timeFormat string, utc bool, appendBody bool) func(ctx *context.Context) {
-
 	if appendBody {
-		beego.Warn("[zap] Be careful with personal data in body.")
+		beego.Warn("[beezap] Be careful with personal data in body.")
 	}
 
 	return func(ctx *context.Context) {
@@ -36,8 +35,15 @@ func AfterMiddlewareZap(logger *zap.Logger, timeFormat string, utc bool, appendB
 
 			headers, _ := json.Marshal(ctx.Request.Header)
 
+			statusCode := ctx.Output.Status
+
+			// TODO: The default code in beego is 0.
+			if statusCode == 0 {
+				statusCode = 200
+			}
+
 			fields := []zap.Field{
-				zap.Int("status", ctx.Output.Status),
+				zap.Int("status", statusCode),
 				zap.String("method", ctx.Input.Method()),
 				zap.String("path", path),
 				zap.String("uri", ctx.Input.URI()),
@@ -55,9 +61,7 @@ func AfterMiddlewareZap(logger *zap.Logger, timeFormat string, utc bool, appendB
 				fields = append(fields, zap.ByteString("body", ctx.Input.RequestBody))
 			}
 
-			logger.Info(path,
-				fields...
-			)
+			logger.Info(path, fields...)
 		}
 	}
 }
@@ -66,5 +70,5 @@ func InitBeeZapMiddleware(logger *zap.Logger, timeFormat string, utc bool,  appe
 	beego.InsertFilter("*", beego.BeforeRouter, BeforeMiddlewareZap(), false)
 	beego.InsertFilter("*", beego.FinishRouter, AfterMiddlewareZap(logger, timeFormat, utc, len(appendBody) > 0 && appendBody[0]), false)
 
-	beego.Info("[zap] Logger started")
+	beego.Info("[beezap] Logger started")
 }
